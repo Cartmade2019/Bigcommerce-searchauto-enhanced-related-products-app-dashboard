@@ -4,22 +4,23 @@ import { getStoreDataByStoreHash } from '@lib/dbs/mysql';
 
 export default async function products(req: NextApiRequest, res: NextApiResponse) {
   const {
-    method
+    body,
+    query: { storeid },
+    method,
   } = req;
 
   switch (method) {
-    case 'GET':
+    case 'PUT':
       try {
-        const { accessToken, storeHash } = await getSession(req);
-        const result = await getStoreDataByStoreHash(storeHash);
-        res.status(200).json(result[0]);
+        // const result = await getStoreDataByStoreHash('asd');
+        // res.status(200).json(result);
       } catch (error) {
         const { message, response } = error;
         res.status(response?.status || 500).json({ message });
       }
       break;
     default:
-      res.setHeader('Allow', ['GET']);
+      res.setHeader('Allow', ['PUT']);
       res.status(405).end(`Method ${method} Not Allowed`);
   }
 }

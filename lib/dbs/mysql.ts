@@ -98,3 +98,24 @@ export async function getRelatedProductCSVData(store: number) {
     const results = await query('SELECT * FROM csvdata WHERE store = ?', store);
     return results;
 }
+
+export async function getStoreDataById(storeId: number) {
+    const results = await query('SELECT * FROM storeData WHERE store_id = ?', storeId);
+    return results;
+}
+
+
+export async function getStoreDataByStoreHash(storehash: string){
+    const results = await query(`
+        SELECT storedata.*
+        FROM storedata
+        JOIN stores ON storedata.store_id = stores.id
+        WHERE stores.storehash = ?
+      `, [storehash]);
+
+    return results;
+
+}
+
+
+
