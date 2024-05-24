@@ -47,14 +47,14 @@ export function useProductList(query?: QueryParams) {
     };
 }
 
-export function useProductInfo(pid: number, list?:ListItem[]) {
+export function useProductInfo(pid: number, list?: ListItem[]) {
     const { context } = useSession();
     const params = new URLSearchParams({ context }).toString();
 
-    let product: ListItem; 
+    let product: ListItem;
 
-    if (list?.length) { 
-       product = list.find(item => item.id === pid);
+    if (list?.length) {
+        product = list.find(item => item.id === pid);
     }
 
     // Conditionally fetch product if it doesn't exist in the list (e.g. deep linking)
@@ -94,6 +94,18 @@ export const useShippingAndProductsInfo = (orderId: number) => {
 
     return {
         order: data,
+        isLoading: !data && !error,
+        error,
+    };
+}
+
+
+export function useStoreData() {
+    const { context } = useSession();
+    const params = new URLSearchParams({ context }).toString();
+    const { data, error } = useSWR(context ? ['/api/related-products/products', params] : null, fetcher);
+    return {
+        storeDataResult: data,
         isLoading: !data && !error,
         error,
     };

@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { bigcommerceClient, getSession } from '../../../lib/auth';
-import { getStoreDataByStoreHash } from '@lib/dbs/mysql';
+import { getStoreDataByStoreHash, updateStoreDataById } from '@lib/dbs/mysql';
 
 export default async function products(req: NextApiRequest, res: NextApiResponse) {
   const {
@@ -12,8 +12,10 @@ export default async function products(req: NextApiRequest, res: NextApiResponse
   switch (method) {
     case 'PUT':
       try {
-        // const result = await getStoreDataByStoreHash('asd');
-        // res.status(200).json(result);
+        console.log('Updated body:', storeid, body);
+        const result = await updateStoreDataById(storeid, body);
+        console.log('Update result:', result);
+        res.status(200).json(result);
       } catch (error) {
         const { message, response } = error;
         res.status(response?.status || 500).json({ message });

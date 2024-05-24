@@ -105,7 +105,7 @@ export async function getStoreDataById(storeId: number) {
 }
 
 
-export async function getStoreDataByStoreHash(storehash: string){
+export async function getStoreDataByStoreHash(storehash: string) {
     const results = await query(`
         SELECT storedata.*
         FROM storedata
@@ -116,6 +116,16 @@ export async function getStoreDataByStoreHash(storehash: string){
     return results;
 
 }
+
+export async function updateStoreDataById(storeId: any, updateData: { [key: string]: any }) {
+    const updateFields = Object.keys(updateData).map(key => `${key} = ?`).join(', ');
+    const updateValues = Object.values(updateData);
+    updateValues.push(storeId);
+    const sql = `UPDATE storeData SET ${updateFields} WHERE store_id = ?`;
+    const results = await query(sql, updateValues);
+    return results;
+}
+
 
 
 
