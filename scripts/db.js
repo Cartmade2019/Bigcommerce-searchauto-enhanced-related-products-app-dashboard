@@ -43,6 +43,30 @@ const storeUsersCreate = query('CREATE TABLE `storeUsers` (\n' +
     ') ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;\n'
 );
 
-Promise.all([usersCreate, storesCreate]).then(() => {
-    connection.end();
-});
+const storeDataCreate = query('CREATE TABLE `storeData` (\n' +
+    '  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,\n' +
+    '  `store_id` int(11) unsigned NOT NULL,\n' +
+    '  `heading` varchar(255) NOT NULL,\n' +
+    '  `sub_heading` varchar(255) NOT NULL,\n' +
+    '  `csv_url` text NOT NULL,\n' +
+    '  `storeUrl` text NOT NULL,\n' +
+    '  PRIMARY KEY (`id`),\n' +
+    '  FOREIGN KEY (`store_id`) REFERENCES `stores`(`id`)\n' +
+    ') ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;'
+);
+
+// Promise.all([usersCreate, storesCreate, storeDataCreate]).then(() => {
+//     connection.end();
+// });
+Promise.all([usersCreate, storesCreate, storeUsersCreate])
+    .then(() => {
+        return storeDataCreate;
+    })
+    .then(() => {
+        console.log('Tables created successfully');
+        connection.end();
+    })
+    .catch(error => {
+        console.error('Error creating tables:', error);
+        connection.end();
+    });

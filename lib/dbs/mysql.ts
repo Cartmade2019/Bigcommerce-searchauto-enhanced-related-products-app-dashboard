@@ -34,8 +34,76 @@ export async function setStore(session: SessionProps) {
     const storeHash = context?.split('/')[1] || '';
     const storeData: StoreData = { accessToken, scope, storeHash };
 
-    await query('REPLACE INTO stores SET ?', storeData);
+    // await query('REPLACE INTO stores SET ?', storeData);
+    // Run the query and get the inserted or updated ID
+    // const result = await query('REPLACE INTO stores SET ?', storeData);
+    // const storeId = result.insertId || result.id;
+    // Disable foreign key checks
+    await query('SET FOREIGN_KEY_CHECKS = 0');
+
+    // Run the REPLACE INTO query
+    const result = await query('REPLACE INTO stores SET ?', storeData);
+    const storeId = result.insertId || result.id;
+
+    // Re-enable foreign key checks
+    await query('SET FOREIGN_KEY_CHECKS = 1');
+
+    if (storeId) {
+        await createStoreData(storeId, storeHash);
+        await createScriptURL(storeId, storeHash, accessToken)
+    }
 }
+
+// custom
+// update the store data table with store data
+async function createStoreData(store_id: number, storeHash: string) {
+    const storeData = {
+        store_id,
+        heading: 'Your Heading',
+        sub_heading: 'Your Sub Heading',
+        csv_url: 'https://search-auto-related-app-backend-ly5px.ondigitalocean.app/uploads/example-file.xlsx',
+        storeUrl: `https://store-${storeHash}.mybigcommerce.com`
+    };
+
+    await query('INSERT INTO storeData SET ?', storeData);
+}
+
+// create a script URL on first install
+async function createScriptURL(storeId: number, storeHash: string, accessToken: string) {
+    const myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+    myHeaders.append("X-Auth-Token", accessToken);
+
+    const raw = JSON.stringify({
+        "name": "Searchauto enhanced related products",
+        "description": "The realted products will be displayed on the PDP based on the CSV upladed.",
+        "html": "<script defer src='https://search-auto-related-app-backend-ly5px.ondigitalocean.app/api/related-products/products?sku={{ product.sku }}&storeId=" + storeId + "&storefront_api={{ settings.storefront_api.token }}'></script>",
+        "auto_uninstall": true,
+        "load_method": "default",
+        "location": "footer",
+        "visibility": "storefront",
+        "kind": "script_tag",
+        "consent_category": "essential"
+    });
+
+    const requestOptions: RequestInit = {
+        method: "POST",
+        headers: myHeaders,
+        body: raw,
+        redirect: "follow"
+    };
+
+    try {
+        const response = await fetch(`https://api.bigcommerce.com/stores/${storeHash}/v3/content/scripts`, requestOptions);
+        const result = await response.text();
+        console.log(result);
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+// custom
+
 
 // Use setStoreUser for storing store specific variables
 export async function setStoreUser(session: SessionProps) {
@@ -90,7 +158,10 @@ export async function getStoreToken(storeHash: string) {
 }
 
 export async function deleteStore({ store_hash: storeHash }: SessionProps) {
-    await query('DELETE FROM stores WHERE storeHash = ?', storeHash);
+    const deleteStoreDataResult = await deleteStoreDataByStoreHash(storeHash);
+    if(deleteStoreDataResult){
+        await query('DELETE FROM stores WHERE storeHash = ?', storeHash);
+    }
 }
 
 
@@ -107,14 +178,12 @@ export async function getStoreDataById(storeId: number) {
 
 export async function getStoreDataByStoreHash(storehash: string) {
     const results = await query(`
-        SELECT storedata.*
-        FROM storedata
-        JOIN stores ON storedata.store_id = stores.id
+        SELECT searchautorelatedapp.storeData.*
+        FROM searchautorelatedapp.storeData
+        JOIN searchautorelatedapp.stores ON storeData.store_id = stores.id
         WHERE stores.storehash = ?
       `, [storehash]);
-
     return results;
-
 }
 
 export async function updateStoreDataById(storeId: any, updateData: { [key: string]: any }) {
@@ -124,6 +193,33 @@ export async function updateStoreDataById(storeId: any, updateData: { [key: stri
     const sql = `UPDATE storeData SET ${updateFields} WHERE store_id = ?`;
     const results = await query(sql, updateValues);
     return results;
+}
+
+export async function deleteStoreDataByStoreHash(storehash: string) {
+    try {
+        // Get store data by store hash
+        const storeData = await getStoreDataByStoreHash(storehash);
+        console.log("storeData", storeData)
+
+        if (storeData.length === 0) {
+            console.log('No store data found for the given store hash');
+            return;
+        }
+
+        // Extract store_id from the first result (assuming all results have the same store_id)
+        const storeId = storeData[0].store_id;
+
+        // Delete store data
+        const deleteResult = await query(`
+            DELETE FROM storeData
+            WHERE store_id = ?
+        `, [storeId]);
+        console.log(`Deleted ${deleteResult.affectedRows} rows from storeData`);
+        return deleteResult;
+    } catch (error) {
+        console.error('Error deleting store data by store hash:', error);
+        throw error; // Re-throw the error after logging it
+    }
 }
 
 

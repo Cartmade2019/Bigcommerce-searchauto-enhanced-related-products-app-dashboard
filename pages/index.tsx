@@ -1,11 +1,10 @@
-import { Box, Button, FileUploader, Flex, Form, FormGroup, FormProps, H1, H4, InlineMessage, Input, InputProps, Panel, Textarea } from '@bigcommerce/big-design';
+import { AlertProps, Box, Button, FileUploader, Form, FormGroup, Input, Link, Panel, Textarea } from '@bigcommerce/big-design';
 import styled from 'styled-components';
-import ErrorMessage from '../components/error';
-import { useProducts, useStoreData } from '../lib/hooks';
-import { EditIcon, InsertDriveFileIcon } from '@bigcommerce/big-design-icons';
+import { useStoreData } from '../lib/hooks';
+import { EditIcon } from '@bigcommerce/big-design-icons';
 import { useSession } from 'context/session';
-import { FormEvent, useEffect, useState } from 'react';
-import router from 'next/router';
+import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
+import { alertsManager } from './_app';
 
 type storeDatas = {
     id: number;
@@ -15,139 +14,173 @@ type storeDatas = {
     csv_url: string;
     storeUrl?: string;
 };
+const alertSuccess: AlertProps = {
+    messages: [
+        {
+            text: 'Changes Applied.',
 
+        },
+    ],
+    type: 'success',
+    onClose: () => null,
+};
+const alertFailure: AlertProps = {
+    messages: [
+        {
+            text: 'something went woring, please try again.',
+
+        },
+    ],
+    type: 'error',
+    onClose: () => null,
+};
+
+const someAsyncOperation = async (data: storeDatas, encodedContext: any) => {
+    try {
+        const { id, csv_url, heading, sub_heading } = data;
+        const apiFormattedData = { csv_url: csv_url, heading: heading, sub_heading: sub_heading };
+        // Update product details
+        const response = await fetch(`/api/related-products/${id}?context=${encodedContext}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(apiFormattedData),
+        });
+
+        // router.push('/');
+        return response;
+    } catch (error) {
+        console.error('Error updating the product: ', error);
+        return error;
+    }
+};
+
+const validateFileSize = (file: File): boolean => {
+    const MB = 3 * 1024 * 1024;
+    return file.size <= MB;
+};
+
+const csvBoxStyle = {
+    border: "1px solid #dadbe8",
+    padding: "20px",
+    paddingTop: "0",
+    maxWidth: "376px",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    borderRadius: "4px"
+};
+
+const urlStyle = {
+    textDecoration: "none",
+};
 
 const Index = () => {
     // if (isLoading) return <Loading />;
-    const [storeData, setStoreData] = useState<storeDatas>();
-    const [value, setValue] = useState('');
-    const [textAreaValue, setTextAreaValue] = useState('');
+    const [files, setFiles] = useState<File[]>([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    // Assuming useStoreData is a custom hook that returns an object with isLoading and storeDataResult properties
+    const { context: encodedContext } = useSession() || {};
+    const { isLoading: isInfoLoading, storeDataResult } = useStoreData();
+    const { id, store_id, csv_url, heading: initialHeading = '', sub_heading: initialSubHeading = '' } = storeDataResult ?? {} as storeDatas;
+    const [formData, setFormData] = useState({
+        heading: initialHeading,
+        sub_heading: initialSubHeading
+    });
+    const [csvUrlData, setCsvUrlData] = useState(csv_url);
 
-    // const handleChange: InputProps['onChange'] = (event) =>
-    //     setValue(event.target.value);
-
-    // const handleTaxtAreaChange = (event: React.ChangeEvent<HTMLTextAreaElement>) =>
-    //     setTextAreaValue(event.target.value);
-
-    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = event.target;
-        const newStoreData = {
-            ...storeData,
-            [name]: value,
-        };
-        setStoreData(newStoreData);
-    };
-
-    const handleTextareaChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-        const { name, value } = event.target;
-        const newStoreData = {
-            ...storeData,
-            [name]: value,
-        };
-        setStoreData(newStoreData);
-    };
-
-    const dataGlobal = {
-        id: storeData ? storeData.id : '',
-        csv_url: storeData ? storeData.csv_url : '',
-        heading: storeData ? storeData.heading : '',
-        sub_heading: storeData ? storeData.sub_heading : '',
-    };
-
-
-    // const handleSubmit: FormProps['onSubmit'] = async (event: FormEvent<HTMLFormElement>) => {
-    //     event.preventDefault();
-    //     event.stopPropagation();
-
-    //     const form = event.currentTarget;
-    //     if (form.checkValidity()) {
-    //         await fetch(`/api/related-products/${dataGlobal.id}?context=${encodedContext}`, {
-    //             method: 'PUT',
-    //             headers: { 'Content-Type': 'application/json' },
-    //             body: JSON.stringify(dataGlobal),
-    //         });
-    //         router.push('/products');
-    //     } else {
-    //         console.log("form", form);
-    //     }
-    // };
-
+    // When form is submitter
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        const formData = new FormData(event.currentTarget);
+        const submitFormData = new FormData(event.currentTarget);
+        const file = files && files.length > 0 ? files[0] : null;
 
         const data: storeDatas = {
-            id: Number(formData.get('id')),
-            heading: formData.get('heading') as string,
-            sub_heading: formData.get('sub_heading') as string,
-            csv_url: formData.get('csv_url') as string,
+            id: Number(submitFormData.get('store_id')),
+            heading: submitFormData.get('heading') as string,
+            sub_heading: submitFormData.get('sub_heading') as string,
+            csv_url: submitFormData.get('csv_url') as string,
         };
 
-        await someAsyncOperation(data);
-    };
+        setIsSubmitting(true);
 
-    const someAsyncOperation = async (data: storeDatas) => {
-        console.log("rttrtr", data)
         try {
-            const { csv_url, heading, sub_heading } = data;
-            const apiFormattedData = { csv_url: csv_url, heading: heading, sub_heading: sub_heading };
-            // Update product details
-            await fetch(`/api/related-products/${dataGlobal.id}?context=${encodedContext}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(apiFormattedData),
-            });
+            if (file) {
+                const fileFormData = new FormData();
+                fileFormData.append('file', file);
 
-            router.push('/');
+                const fileUploadResponse = await fetch('api/related-products/upload', {
+                    method: 'POST',
+                    body: fileFormData
+                });
+
+                if (!fileUploadResponse.ok) {
+                    throw new Error('File upload failed');
+                }
+
+                const fileUploadResult = await fileUploadResponse.json();
+                data.csv_url = fileUploadResult.fileUrl;
+            }
+
+            const operationSynced = await someAsyncOperation(data, encodedContext);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            if (operationSynced.ok) {
+                // Update formData state with the submitted data, including csv_url
+                setFiles([]);
+                setCsvUrlData(data.csv_url);
+                console.log("data csv", data.csv_url)
+                alertsManager.add(alertSuccess);
+            } else {
+                alertsManager.add(alertFailure);
+            }
         } catch (error) {
-            console.error('Error updating the product: ', error);
+            alertsManager.add(alertFailure);
+        } finally {
+            setIsSubmitting(false);
         }
     };
-    const [files, setFiles] = useState<File[]>([]);
 
-    const validateFileSize = (file: File): boolean => {
-        const MB = 3 * 1024 * 1024;
-        return file.size <= MB;
+    // Text change handle function
+    const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = event.target;
+        setFormData({
+            ...formData,
+            [name]: value
+        });
     };
 
-    const { context: encodedContext } = useSession() || {};
+    // Text area change handle function
+    const handleTextareaChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+        const { name, value } = event.target;
+        setFormData({
+            ...formData,
+            [name]: value
+        });
+    };
 
-    // useEffect(() => {
-    //     console.log("adsdas", encodedContext)
-    //     const fetchStoreData = async () => {
-    //         if (!encodedContext) {
-    //             console.error('Context is not available.');
-    //             return;
-    //         }
-    //         try {
-    //             const response = await fetch(`/api/related-products/products?context=${encodedContext}`);
+    // set form data
+    useEffect(() => {
+        console.log("use effect triger")
+        setCsvUrlData(csv_url);
+        setFormData({
+            heading: initialHeading,
+            sub_heading: initialSubHeading
+        });
+    }, [initialHeading, initialSubHeading]);
 
-    //             if (!response.ok) {
-    //                 throw new Error(`HTTP error! Status: ${response.status}`);
-    //             }
-
-    //             const data = await response.json();
-    //             console.log("Fetched store data:", data);
-    //             if (data) {
-    //                 setStoreData(data);
-    //             }
-    //         } catch (error) {
-    //             console.error('Error fetching store data:', error);
-    //         }
-    //     };
-
-    //     fetchStoreData();
-    // }, [encodedContext]);
-
-    // Assuming useStoreData is a custom hook that returns an object with isLoading and storeDataResult properties
-    const { isLoading: isInfoLoading, storeDataResult } = useStoreData();
-    const { id, csv_url, heading, sub_heading } = storeDataResult ?? {} as storeDatas;
-    const formData = { id, csv_url, heading, sub_heading }
-    console.log("dasdasd", formData)
     return (
         <Panel header="Homepage" id="home">
             <Form onSubmit={handleSubmit}>
+                <input
+                    type="hidden"
+                    name="store_id"
+                    value={store_id}
+                />
+                <input
+                    type="hidden"
+                    name="csv_url"
+                    value={csvUrlData}
+                />
                 <FormGroup>
                     <FileUploader
                         dropzoneConfig={{
@@ -167,39 +200,21 @@ const Index = () => {
                         ]}
                     />
                 </FormGroup>
-                {/* 
-                <FormGroup>
-                    <Input
-                        iconLeft={<InsertDriveFileIcon color="success" />}
-                        label="CSV File URL"
-                        onChange={handleChange}
-                        placeholder="https://"
-                        type="text"
-                        name="csv_url"
-                        disabled
-                        value={storeData ? storeData.csv_url : ''}
-                        required
-                    />
-                </FormGroup>
-                */}
 
-                <input
-                    type="hidden"
-                    name="csv_url"
-                    value={csv_url}
-                    required
-                />
-                {csv_url && (
+                {csvUrlData && (
                     <FormGroup>
                         <div style={csvBoxStyle}>
-                            <a style={urlStyle} target='_blank' href={csv_url || ''}>
-                                <h4 style={{ color: "#313440" }}>CSV File</h4>
+                            {/* <a style={urlStyle} target='_blank' href={csvUrlData || ''}>
+                                <h4 style={{ color: "#313440" }}>CSV File - {csvUrlData || 'Null'}</h4>
                                 <span className='span-url' style={{ color: "#17ab17" }}>File Uploaded: Click here to download.</span>
-                            </a>
+                            </a> */}
+                            <h4 style={{ color: "#313440" }}>CSV File</h4>
+                            <Link external href={csvUrlData || ''} target="_blank">
+                                <span className='span-url' style={{ color: "#17ab17" }}>File Uploaded: Click here to download.</span>
+                            </Link>
                         </div>
                     </FormGroup>
                 )}
-
                 <FormGroup>
                     <Input
                         iconLeft={<EditIcon color="#a5aff7" />}
@@ -208,7 +223,7 @@ const Index = () => {
                         placeholder="Heading"
                         type="text"
                         name="heading"
-                        value={heading}
+                        value={formData.heading}
                         required
                     />
                 </FormGroup>
@@ -219,34 +234,18 @@ const Index = () => {
                         rows={3}
                         placeholder="sub Heading"
                         name="sub_heading"
-                        value={sub_heading}
+                        value={formData.sub_heading}
                         required
                     />
                 </FormGroup>
                 <Box marginTop="xxLarge">
-                    <Button type="submit">Save</Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? 'Saving...' : 'Save'}
+                    </Button>
                 </Box>
             </Form>
         </Panel>
     );
-};
-
-const StyledBox = styled(Box)`
-    min-width: 10rem;
-`;
-
-const csvBoxStyle = {
-    border: "1px solid #dadbe8",
-    padding: "20px",
-    paddingTop: "0",
-    maxWidth: "376px",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    borderRadius: "4px"
-};
-
-const urlStyle = {
-    textDecoration: "none",
 };
 
 

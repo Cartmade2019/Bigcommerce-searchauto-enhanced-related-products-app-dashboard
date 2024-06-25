@@ -12,9 +12,7 @@ export default async function products(req: NextApiRequest, res: NextApiResponse
   switch (method) {
     case 'PUT':
       try {
-        console.log('Updated body:', storeid, body);
         const result = await updateStoreDataById(storeid, body);
-        console.log('Update result:', result);
         res.status(200).json(result);
       } catch (error) {
         const { message, response } = error;
