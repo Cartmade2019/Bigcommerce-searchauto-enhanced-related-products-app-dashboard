@@ -9,7 +9,8 @@
     "plugin:import/warnings",
     "plugin:import/typescript",
     "plugin:react/recommended",
-    "plugin:react-hooks/recommended"
+    "plugin:react-hooks/recommended",
+    "next/core-web-vitals"
   ],
   "env": {
     "es6": true,
