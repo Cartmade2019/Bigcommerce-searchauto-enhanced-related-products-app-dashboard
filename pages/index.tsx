@@ -184,7 +184,7 @@ const Index = () => {
                 <FormGroup>
                     <FileUploader
                         dropzoneConfig={{
-                            label: 'Drag and drop image here',
+                            label: 'Drag and drop your excel file here',
                         }}
                         accept={'.xlsx'}
                         files={files}
