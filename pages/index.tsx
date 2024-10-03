@@ -1,4 +1,4 @@
-import { AlertProps, Box, Button, FileUploader, Form, FormGroup, Input, Link, Panel, Textarea } from '@bigcommerce/big-design';
+import { AlertProps, Box, Button, FileUploader, Form, FormGroup, Input, Link, Panel, Textarea, Text, H4, Flex, FlexItem } from '@bigcommerce/big-design';
 import styled from 'styled-components';
 import { useStoreData } from '../lib/hooks';
 import { EditIcon } from '@bigcommerce/big-design-icons';
@@ -169,82 +169,109 @@ const Index = () => {
     }, [initialHeading, initialSubHeading]);
 
     return (
-        <Panel header="Homepage" id="home">
-            <Form onSubmit={handleSubmit}>
-                <input
-                    type="hidden"
-                    name="store_id"
-                    value={store_id}
-                />
-                <input
-                    type="hidden"
-                    name="csv_url"
-                    value={csvUrlData}
-                />
-                <FormGroup>
-                    <FileUploader
-                        dropzoneConfig={{
-                            label: 'Drag and drop your excel file here',
-                        }}
-                        accept={'.xlsx'}
-                        files={files}
-                        label="Upload files"
-                        onFilesChange={setFiles}
-                        required
-                        validators={[
-                            {
-                                validator: validateFileSize,
-                                type: 'file-size',
-                                message: "File size should not exceed 3 MB"
-                            },
-                        ]}
+        <>
+            <Panel header="Homepage" id="home">
+                <Form onSubmit={handleSubmit}>
+                    <input
+                        type="hidden"
+                        name="store_id"
+                        value={store_id}
                     />
-                </FormGroup>
-
-                {csvUrlData && (
+                    <input
+                        type="hidden"
+                        name="csv_url"
+                        value={csvUrlData}
+                    />
                     <FormGroup>
-                        <div style={csvBoxStyle}>
-                            {/* <a style={urlStyle} target='_blank' href={csvUrlData || ''}>
+                        <FileUploader
+                            dropzoneConfig={{
+                                label: 'Drag and drop your excel file here',
+                            }}
+                            accept={'.xlsx'}
+                            files={files}
+                            label="Upload files"
+                            onFilesChange={setFiles}
+                            required
+                            validators={[
+                                {
+                                    validator: validateFileSize,
+                                    type: 'file-size',
+                                    message: "File size should not exceed 3 MB"
+                                },
+                            ]}
+                        />
+                    </FormGroup>
+
+                    {csvUrlData && (
+                        <FormGroup>
+                            <div style={csvBoxStyle}>
+                                {/* <a style={urlStyle} target='_blank' href={csvUrlData || ''}>
                                 <h4 style={{ color: "#313440" }}>CSV File - {csvUrlData || 'Null'}</h4>
                                 <span className='span-url' style={{ color: "#17ab17" }}>File Uploaded: Click here to download.</span>
                             </a> */}
-                            <h4 style={{ color: "#313440" }}>CSV File</h4>
-                            <Link external href={csvUrlData || ''} target="_blank">
-                                <span className='span-url' style={{ color: "#17ab17" }}>File Uploaded: Click here to download.</span>
-                            </Link>
-                        </div>
+                                <h4 style={{ color: "#313440" }}>CSV File</h4>
+                                <Link external href={csvUrlData || ''} target="_blank">
+                                    <span className='span-url' style={{ color: "#17ab17" }}>File Uploaded: Click here to download.</span>
+                                </Link>
+                            </div>
+                        </FormGroup>
+                    )}
+                    <FormGroup>
+                        <Input
+                            iconLeft={<EditIcon color="#a5aff7" />}
+                            label="Related Product Heading"
+                            onChange={handleChange}
+                            placeholder="Heading"
+                            type="text"
+                            name="heading"
+                            value={formData.heading}
+                            required
+                        />
                     </FormGroup>
-                )}
-                <FormGroup>
-                    <Input
-                        iconLeft={<EditIcon color="#a5aff7" />}
-                        label="Related Product Heading"
-                        onChange={handleChange}
-                        placeholder="Heading"
-                        type="text"
-                        name="heading"
-                        value={formData.heading}
-                        required
-                    />
-                </FormGroup>
-                <FormGroup>
-                    <Textarea
-                        label="Sub Heading"
-                        onChange={handleTextareaChange}
-                        rows={3}
-                        placeholder="sub Heading"
-                        name="sub_heading"
-                        value={formData.sub_heading}
-                        required
-                    />
-                </FormGroup>
-                <Box marginTop="xxLarge">
-                    <Button type="submit" disabled={isSubmitting}>
-                        {isSubmitting ? 'Saving...' : 'Save'}
-                    </Button>
-                </Box>
-            </Form>
-        </Panel>
+                    <FormGroup>
+                        <Textarea
+                            label="Sub Heading"
+                            onChange={handleTextareaChange}
+                            rows={3}
+                            placeholder="sub Heading"
+                            name="sub_heading"
+                            value={formData.sub_heading}
+                            required
+                        />
+                    </FormGroup>
+                    <Box marginTop="xxLarge">
+                        <Button type="submit" disabled={isSubmitting}>
+                            {isSubmitting ? 'Saving...' : 'Save'}
+                        </Button>
+                    </Box>
+                </Form>
+
+            </Panel>
+
+            <Panel>
+                <Flex flexWrap="wrap" justifyContent="center">
+                    <FlexItem>
+                        <H4>Need Help? Contact our support team</H4>
+                        <Flex flexDirection="row" justifyContent="center" flexGap="10px">
+                            <FlexItem>
+                                <Link href="https://searchauto.app" target="_blank">
+                                    SearchAuto
+                                </Link>
+                            </FlexItem>
+                            <FlexItem>
+                               | 
+                            </FlexItem>
+                            <FlexItem>
+                                <Link href="mailto:dev@searchauto.app" target="_blank">
+                                    Contact Support
+                                </Link>
+                            </FlexItem>
+                        </Flex>
+                    </FlexItem >
+                </Flex >
+
+            </Panel >
+        </>
     );
 };
 
